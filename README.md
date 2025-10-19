@@ -36,7 +36,6 @@ Shazam v1.0.0 — мощный модуль для распознавания м
 ## 🎨 Особенности
 - ⚡ **Мгновенное распознавание** — результаты за секунды благодаря API
 - 💾 **Оптимизация памяти** — обработка аудио с минимальным потреблением ресурсов
-- 🌐 **Стабильный API** — надёжный api.paxsenix.org с высоким аптаймом
 - 🚀 **Умная обработка ошибок** — без лишних запросов
 - 🔄 **Автоматическая очистка** — временные файлы удаляются автоматически
 
@@ -91,7 +90,6 @@ Shazam v1.0.0 is a powerful module for recognizing music from videos and audio d
 ## 🎨 Features
 - ⚡ **Instant Recognition** — results in seconds via API
 - 💾 **Memory Optimization** — processes audio with minimal resource usage
-- 🌐 **Stable API** — reliable api.paxsenix.org with high uptime
 - 🚀 **Smart Error Handling** — no unnecessary retries
 - 🔄 **Automatic Cleanup** — temporary files are removed automatically
 
