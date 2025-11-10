@@ -1,4 +1,4 @@
-__version__ = (1, 0, 0)
+__version__ = (1, 0, 1)
 
 #        █████  ██████   ██████ ███████  ██████  ██████   ██████ 
 #       ██   ██ ██   ██ ██      ██      ██      ██    ██ ██      
@@ -42,6 +42,7 @@ class Shazam(loader.Module):
         "result_header": "Title: {} 🎵\nArtist: {} 👤\nShazam URL: <a href='{}'>Link</a> 🔗\n🔗Listen on:\n<emoji document_id=5233578612665375810>🎵</emoji> {}\n<emoji document_id=5321505140199418151>🎥</emoji> {}",
         "processing": "Processing your audio with Shazam <emoji document_id=5346259862814734771>📱</emoji>{}",
         "processing_fallback": "Processing your audio with Shazam 📱{}",
+        "no_token": "No API token set! Please check the token source URL.",
     }
 
     strings_ru = {
@@ -56,6 +57,7 @@ class Shazam(loader.Module):
         "result_header": "Название: {} 🎵\nИсполнитель: {} 👤\nURL Shazam: <a href='{}'>Ссылка</a> 🔗\n🔗Слушать на:\n<emoji document_id=5233578612665375810>🎵</emoji> {}\n<emoji document_id=5321505140199418151>🎥</emoji> {}",
         "processing": "Обработка аудио с Shazam <emoji document_id=5346259862814734771>📱</emoji>{}",
         "processing_fallback": "Обработка аудио с Shazam 📱{}",
+        "no_token": "API токен не установлен! Проверьте URL источника токена.",
     }
 
     strings_mx = {
@@ -70,6 +72,7 @@ class Shazam(loader.Module):
         "result_header": "Título: {} 🎵\nArtista: {} 👤\nURL de Shazam: <a href='{}'>Enlace</a> 🔗\n🔗Escuchar en:\n<emoji document_id=5233578612665375810>🎵</emoji> {}\n<emoji document_id=5321505140199418151>🎥</emoji> {}",
         "processing": "Procesando tu audio con Shazam <emoji document_id=5346259862814734771>📱</emoji>{}",
         "processing_fallback": "Procesando tu audio con Shazam 📱{}",
+        "no_token": "¡No se ha establecido token API! Verifique la URL de la fuente del token.",
     }
 
     def __init__(self):
@@ -78,20 +81,45 @@ class Shazam(loader.Module):
                 "upload_api",
                 "https://api.apcecoc.pp.ua/music-to-url",
                 lambda: "API endpoint for audio upload"
+            ),
+            loader.ConfigValue(
+                "token_source",
+                "https://pastebin.com/raw/QkZ84JgF",  # Замените на реальный URL вашего Pastebin
+                lambda: "URL to fetch the latest API token from (e.g., Pastebin raw URL)"
             )
         )
         self._session = None
         self._timeout = aiohttp.ClientTimeout(total=60, connect=10)
+        self._token_cache = None
 
     async def client_ready(self):
         self._session = aiohttp.ClientSession(
             timeout=self._timeout,
             connector=aiohttp.TCPConnector(limit=10, ttl_dns_cache=300)
         )
+        await self._load_token()  # Инициализируем токен при старте
 
     async def on_unload(self):
         if self._session and not self._session.closed:
             await self._session.close()
+
+    async def _load_token(self):
+        """Загружает токен из внешнего источника и кэширует его в БД при каждом вызове"""
+        try:
+            async with self._session.get(self.config["token_source"]) as resp:
+                resp.raise_for_status()
+                new_token = (await resp.text()).strip()
+                if new_token != self._token_cache:
+                    self.set("api_token", new_token)  # Сохраняем в БД Hikka
+                    self._token_cache = new_token
+                return new_token
+        except Exception as e:
+            # Если ошибка, используем кэшированный из БД
+            cached_token = self.get("api_token")
+            if cached_token:
+                self._token_cache = cached_token
+                return cached_token
+            raise ValueError("Failed to load API token: {}".format(str(e)))
 
     @loader.command(
         ru_doc="Распознать музыку из видео/аудио (ответьте на сообщение)",
@@ -99,6 +127,11 @@ class Shazam(loader.Module):
         en_doc="Recognize music from video/audio (reply to message)"
     )
     async def shazam(self, message: Message):
+        token = await self._load_token()
+        if not token:
+            await utils.answer(message, self.strings("no_token"), parse_mode="html")
+            return
+
         if not message.reply_to_msg_id:
             await utils.answer(message, self.strings("no_reply"), parse_mode="html")
             return
@@ -189,7 +222,8 @@ class Shazam(loader.Module):
                     audio_url = urllib.parse.urljoin(audio_url, urllib.parse.urlparse(audio_url).path.replace('//', '/'))
 
                 headers = {
-                    "Content-Type": "application/json"
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {token}"
                 }
                 async with self._session.get("https://api.paxsenix.org/tools/shazam", params={"url": audio_url}, headers=headers) as resp:
                     resp.raise_for_status()
