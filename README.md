@@ -14,14 +14,15 @@
 ---
 
 <details>
-<summary>🇷🇺 Русский</summary>
+<summary>🇷🇺 <b>Русский</b></summary>
 
 ## 🌟 Описание
 Shazam v1.0.2 — мощный модуль для распознавания музыки! В этой версии мы полностью отказались от использования внешних API-токенов. Благодаря интеграции библиотеки **ShazamIO**, модуль стал полностью автономным, более быстрым и стабильным. 🔍🎶
 
 ## 🚀 Установка
+
 ```bash
-.dlm [https://raw.githubusercontent.com/apcecoc/Shazam/main/Shazam.py](https://raw.githubusercontent.com/apcecoc/Shazam/main/Shazam.py)
+.dlm https://raw.githubusercontent.com/apcecoc/Shazam/main/Shazam.py
 ````
 
 ## 🛠 Команды
@@ -29,7 +30,7 @@ Shazam v1.0.2 — мощный модуль для распознавания м
 ### 📥 Распознавание музыки
 
 | Команда | Описание |
-|---------|----------|
+| :--- | :--- |
 | `.shazam` | Распознаёт музыку из видео/аудио (ответьте на сообщение) |
 
 ## 🎨 Особенности
@@ -49,19 +50,19 @@ Shazam v1.0.2 — мощный модуль для распознавания м
 
   - [@apcecoc](https://t.me/apcecoc)
 
-\</details\>
+</details>
 
-\<details\>
-\<summary\>🇬🇧 English\</summary\>
+<details>
+<summary>🇬🇧 <b>English</b></summary>
 
 ## 🌟 Description
 
-Shazam v1.0.2 is a powerful module for recognizing music from videos and audio\! This update introduces a **Token-Free architecture**. By switching to the **ShazamIO** engine, the module is now completely autonomous, faster, and more reliable. 🔍🎶
+Shazam v1.0.2 is a powerful module for recognizing music from videos and audio! This update introduces a **Token-Free architecture**. By switching to the **ShazamIO** engine, the module is now completely autonomous, faster, and more reliable. 🔍🎶
 
 ## 🚀 Installation
 
 ```bash
-.dlm [https://raw.githubusercontent.com/apcecoc/Shazam/main/Shazam.py](https://raw.githubusercontent.com/apcecoc/Shazam/main/Shazam.py)
+.dlm https://raw.githubusercontent.com/apcecoc/Shazam/main/Shazam.py
 ```
 
 ## 🛠 Commands
@@ -69,7 +70,7 @@ Shazam v1.0.2 is a powerful module for recognizing music from videos and audio\!
 ### 📥 Music Recognition
 
 | Command | Description |
-|---------|-------------|
+| :--- | :--- |
 | `.shazam` | Recognizes music from video/audio (reply to message) |
 
 ## 🎨 Features
@@ -83,19 +84,19 @@ Shazam v1.0.2 is a powerful module for recognizing music from videos and audio\!
 
   - [@apcecoc](https://t.me/apcecoc)
 
-\</details\>
+</details>
 
-\<details\>
-\<summary\>🇲🇽 Español\</summary\>
+<details>
+<summary>🇲🇽 <b>Español</b></summary>
 
 ## 🌟 Descripción
 
-¡Shazam v1.0.2 es un módulo poderoso para reconocer música\! En esta versión hemos implementado una **arquitectura sin tokens**. Gracias a la integración de **ShazamIO**, el módulo es totalmente autónomo, más rápido y estable. 🔍🎶
+¡Shazam v1.0.2 es un módulo poderoso para reconocer música! En esta versión hemos implementado una **arquitectura sin tokens**. Gracias a la integración de **ShazamIO**, el módulo es totalmente autónomo, más rápido y estable. 🔍🎶
 
-## 🚀 Installation
+## 🚀 Instalación
 
 ```bash
-.dlm [https://raw.githubusercontent.com/apcecoc/Shazam/main/Shazam.py](https://raw.githubusercontent.com/apcecoc/Shazam/main/Shazam.py)
+.dlm https://raw.githubusercontent.com/apcecoc/Shazam/main/Shazam.py
 ```
 
 ## 🛠 Comandos
@@ -103,7 +104,7 @@ Shazam v1.0.2 is a powerful module for recognizing music from videos and audio\!
 ### 📥 Reconocimiento de Música
 
 | Comando | Descripción |
-|---------|-------------|
+| :--- | :--- |
 | `.shazam` | Reconoce música de un video/audio (responde al mensaje) |
 
 ## 🎨 Características
@@ -116,18 +117,18 @@ Shazam v1.0.2 is a powerful module for recognizing music from videos and audio\!
 
   - [@apcecoc](https://t.me/apcecoc)
 
-\</details\>
+</details>
 
 -----
 
-\<div align="center"\>
+<div align="center">
 
 ### 🤝 Contributing
 
-We welcome contributions\! Feel free to submit issues, feature requests, or pull requests.
+We welcome contributions! Feel free to submit issues, feature requests, or pull requests.
 
 ### 📄 License
 
 This project is licensed under the GNU AGPLv3 License.
 
-\</div\>
+</div>
