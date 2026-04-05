@@ -1,4 +1,4 @@
-__version__ = (1, 0, 1)
+__version__ = (1, 0, 2)
 
 #        █████  ██████   ██████ ███████  ██████  ██████   ██████ 
 #       ██   ██ ██   ██ ██      ██      ██      ██    ██ ██      
@@ -6,14 +6,14 @@ __version__ = (1, 0, 1)
 #       ██   ██ ██      ██      ██      ██      ██    ██ ██      
 #       ██   ██ ██       ██████ ███████  ██████  ██████   ██████
 
-#              © Copyright 2025
+#              © Copyright 2026
 #           https://t.me/apcecoc
 #
 # 🔒      Licensed under the GNU AGPLv3
 # 🌐 https://www.gnu.org/licenses/agpl-3.0.html
 
 # meta developer: @apcecoc
-# requires: aiohttp
+# requires: aiohttp, shazamio, ffmpeg
 
 from telethon.types import Message
 from telethon.errors.rpcerrorlist import DocumentInvalidError
@@ -21,11 +21,9 @@ from .. import loader, utils
 import tempfile
 import os
 import subprocess
-import aiohttp
-import random
-import string
 import urllib.parse
 import asyncio
+from shazamio import Shazam as ShazamIO
 
 @loader.tds
 class Shazam(loader.Module):
@@ -35,14 +33,11 @@ class Shazam(loader.Module):
         "no_reply": "Reply to a video or audio message! 📹🔊",
         "invalid_media": "This is not audio or video! ❌",
         "audio_too_large": "Audio clip exceeds 4MB limit! 📏",
-        "upload_error": "Error during upload: {}",
-        "no_url": "Could not extract upload URL! 🔗",
-        "api_error": "API request failed: {} (Status: {}, Response: {})",
         "no_match": "No music match found! 🎵❌",
         "result_header": "Title: {} 🎵\nArtist: {} 👤\nShazam URL: <a href='{}'>Link</a> 🔗\n🔗Listen on:\n<emoji document_id=5233578612665375810>🎵</emoji> {}\n<emoji document_id=5321505140199418151>🎥</emoji> {}",
         "processing": "Processing your audio with Shazam <emoji document_id=5346259862814734771>📱</emoji>{}",
         "processing_fallback": "Processing your audio with Shazam 📱{}",
-        "no_token": "No API token set! Please check the token source URL.",
+        "api_error": "Processing error: {}",
     }
 
     strings_ru = {
@@ -50,14 +45,11 @@ class Shazam(loader.Module):
         "no_reply": "Ответьте на видео или аудио сообщение! 📹🔊",
         "invalid_media": "Это не аудио или видео! ❌",
         "audio_too_large": "Аудио клип превышает лимит 4MB! 📏",
-        "upload_error": "Ошибка при загрузке: {}",
-        "no_url": "Не удалось извлечь URL загрузки! 🔗",
-        "api_error": "Ошибка запроса API: {} (Статус: {}, Ответ: {})",
         "no_match": "Музыка не распознана! 🎵❌",
         "result_header": "Название: {} 🎵\nИсполнитель: {} 👤\nURL Shazam: <a href='{}'>Ссылка</a> 🔗\n🔗Слушать на:\n<emoji document_id=5233578612665375810>🎵</emoji> {}\n<emoji document_id=5321505140199418151>🎥</emoji> {}",
         "processing": "Обработка аудио с Shazam <emoji document_id=5346259862814734771>📱</emoji>{}",
         "processing_fallback": "Обработка аудио с Shazam 📱{}",
-        "no_token": "API токен не установлен! Проверьте URL источника токена.",
+        "api_error": "Ошибка обработки: {}",
     }
 
     strings_mx = {
@@ -65,61 +57,12 @@ class Shazam(loader.Module):
         "no_reply": "¡Responde a un mensaje de video o audio! 📹🔊",
         "invalid_media": "¡Esto no es audio ni video! ❌",
         "audio_too_large": "¡El clip de audio excede el límite de 4MB! 📏",
-        "upload_error": "Error al subir: {}",
-        "no_url": "¡No se pudo extraer la URL de carga! 🔗",
-        "api_error": "Error en la solicitud de API: {} (Estado: {}, Respuesta: {})",
         "no_match": "¡No se encontró coincidencia de música! 🎵❌",
         "result_header": "Título: {} 🎵\nArtista: {} 👤\nURL de Shazam: <a href='{}'>Enlace</a> 🔗\n🔗Escuchar en:\n<emoji document_id=5233578612665375810>🎵</emoji> {}\n<emoji document_id=5321505140199418151>🎥</emoji> {}",
         "processing": "Procesando tu audio con Shazam <emoji document_id=5346259862814734771>📱</emoji>{}",
         "processing_fallback": "Procesando tu audio con Shazam 📱{}",
-        "no_token": "¡No se ha establecido token API! Verifique la URL de la fuente del token.",
+        "api_error": "Error de procesamiento: {}",
     }
-
-    def __init__(self):
-        self.config = loader.ModuleConfig(
-            loader.ConfigValue(
-                "upload_api",
-                "https://api.apcecoc.pp.ua/music-to-url",
-                lambda: "API endpoint for audio upload"
-            ),
-            loader.ConfigValue(
-                "token_source",
-                "https://pastebin.com/raw/QkZ84JgF",  # Замените на реальный URL вашего Pastebin
-                lambda: "URL to fetch the latest API token from (e.g., Pastebin raw URL)"
-            )
-        )
-        self._session = None
-        self._timeout = aiohttp.ClientTimeout(total=60, connect=10)
-        self._token_cache = None
-
-    async def client_ready(self):
-        self._session = aiohttp.ClientSession(
-            timeout=self._timeout,
-            connector=aiohttp.TCPConnector(limit=10, ttl_dns_cache=300)
-        )
-        await self._load_token()  # Инициализируем токен при старте
-
-    async def on_unload(self):
-        if self._session and not self._session.closed:
-            await self._session.close()
-
-    async def _load_token(self):
-        """Загружает токен из внешнего источника и кэширует его в БД при каждом вызове"""
-        try:
-            async with self._session.get(self.config["token_source"]) as resp:
-                resp.raise_for_status()
-                new_token = (await resp.text()).strip()
-                if new_token != self._token_cache:
-                    self.set("api_token", new_token)  # Сохраняем в БД Hikka
-                    self._token_cache = new_token
-                return new_token
-        except Exception as e:
-            # Если ошибка, используем кэшированный из БД
-            cached_token = self.get("api_token")
-            if cached_token:
-                self._token_cache = cached_token
-                return cached_token
-            raise ValueError("Failed to load API token: {}".format(str(e)))
 
     @loader.command(
         ru_doc="Распознать музыку из видео/аудио (ответьте на сообщение)",
@@ -127,11 +70,6 @@ class Shazam(loader.Module):
         en_doc="Recognize music from video/audio (reply to message)"
     )
     async def shazam(self, message: Message):
-        token = await self._load_token()
-        if not token:
-            await utils.answer(message, self.strings("no_token"), parse_mode="html")
-            return
-
         if not message.reply_to_msg_id:
             await utils.answer(message, self.strings("no_reply"), parse_mode="html")
             return
@@ -156,18 +94,9 @@ class Shazam(loader.Module):
                     await utils.answer(status_message, self.strings("processing_fallback").format(dots[i % 3]), parse_mode="html")
 
         progress_task = asyncio.create_task(update_progress())
-
-        def rand_str(length):
-            return ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(length))
-
         file_path = None
-        try:
-            if not self._session or self._session.closed:
-                self._session = aiohttp.ClientSession(
-                    timeout=self._timeout,
-                    connector=aiohttp.TCPConnector(limit=10, ttl_dns_cache=300)
-                )
 
+        try:
             with tempfile.TemporaryDirectory() as temp_dir:
                 ext = ''
                 if reply.video:
@@ -211,53 +140,33 @@ class Shazam(loader.Module):
                 if os.path.getsize(mp3_path) > 4 * 1024 * 1024:
                     raise ValueError(self.strings("audio_too_large"))
 
-                form = aiohttp.FormData()
-                form.add_field('file', open(mp3_path, 'rb'))
-                async with self._session.post(self.config["upload_api"], data=form) as response:
-                    response.raise_for_status()
-                    upload_data = await response.json()
-                    audio_url = upload_data.get("url")
-                    if not audio_url:
-                        raise ValueError(self.strings("no_url"))
-                    audio_url = urllib.parse.urljoin(audio_url, urllib.parse.urlparse(audio_url).path.replace('//', '/'))
+                # Распознавание через локальную библиотеку ShazamIO
+                shazam_client = ShazamIO()
+                out = await shazam_client.recognize(mp3_path)
 
-                headers = {
-                    "Content-Type": "application/json",
-                    "Authorization": f"Bearer {token}"
-                }
-                async with self._session.get("https://api.paxsenix.org/tools/shazam", params={"url": audio_url}, headers=headers) as resp:
-                    resp.raise_for_status()
-                    data = await resp.json()
-
-                if not data.get("ok") or "track" not in data:
+                if not out or "track" not in out:
                     raise ValueError(self.strings("no_match"))
 
-                track = data["track"]
+                track = out["track"]
                 title = track.get("title", "Unknown")
-                artist = track.get("artist", "Unknown")
+                artist = track.get("subtitle", "Unknown") # В shazamio артист обычно находится в subtitle
                 shazam_url = track.get("url", "")
 
-                hub = data.get("hub", [])
-                spotify_link = ""
-                youtube_link = ""
                 query = urllib.parse.quote(f"{title} {artist}")
+                
+                # Дефолтные ссылки, как в вашем старом коде
+                spotify_link = f"<a href='https://open.spotify.com/search/{query}'>Open in Spotify</a>"
+                youtube_link = f"<a href='https://music.youtube.com/search?q={query}&feature=shazam'>Open in YouTube Music</a>"
 
-                if hub:
-                    for h in hub:
-                        if "actions" in h and h["actions"] and "type" in h:
-                            uri = h["actions"][0]["uri"]
-                            caption = h["caption"]
-                            if h["type"] == "SPOTIFY" and uri.startswith("spotify:search:"):
-                                spotify_query = uri.split("spotify:search:")[1]
-                                uri = f"https://open.spotify.com/search/{spotify_query}"
-                                spotify_link = f"<a href='{uri}'>{caption}</a>"
-                            elif h["type"] == "YOUTUBEMUSIC":
-                                youtube_link = f"<a href='{uri}'>{caption}</a>"
-
-                if not spotify_link:
-                    spotify_link = f"<a href='https://open.spotify.com/search/{query}'>Open in Spotify</a>"
-                if not youtube_link:
-                    youtube_link = f"<a href='https://music.youtube.com/search?q={query}&feature=shazam'>Open in YouTube Music</a>"
+                # Пытаемся вытянуть оригинальный Spotify URI, если он есть
+                providers = track.get("hub", {}).get("providers", [])
+                for provider in providers:
+                    if provider.get("type") == "SPOTIFY":
+                        uri = provider.get("actions", [{}])[0].get("uri", "")
+                        if uri.startswith("spotify:search:"):
+                            spotify_query = uri.split("spotify:search:")[1]
+                            spotify_link = f"<a href='https://open.spotify.com/search/{spotify_query}'>Open in Spotify</a>"
+                        break
 
                 result = self.strings("result_header").format(
                     title,
@@ -276,18 +185,9 @@ class Shazam(loader.Module):
         except FileNotFoundError:
             progress_task.cancel()
             await utils.answer(status_message, "ffmpeg not found! Install it in your environment. ⚠️", parse_mode="html")
-        except aiohttp.ClientError as e:
-            progress_task.cancel()
-            await utils.answer(status_message, self.strings("upload_error").format(str(e)), parse_mode="html")
         except ValueError as e:
             progress_task.cancel()
             await utils.answer(status_message, str(e), parse_mode="html")
         except Exception as e:
             progress_task.cancel()
-            await utils.answer(status_message, self.strings("api_error").format(str(e), resp.status if 'resp' in locals() else 'N/A', await resp.text() if 'resp' in locals() else 'N/A'), parse_mode="html")
-        finally:
-            if file_path and os.path.exists(file_path):
-                try:
-                    os.remove(file_path)
-                except OSError:
-                    pass
+            await utils.answer(status_message, self.strings("api_error").format(str(e)), parse_mode="html")
