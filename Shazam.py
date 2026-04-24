@@ -13,7 +13,7 @@ __version__ = (1, 0, 2)
 # 🌐 https://www.gnu.org/licenses/agpl-3.0.html
 
 # meta developer: @apcecoc
-# requires: aiohttp, shazamio, ffmpeg
+# requires: aiohttp shazamio ffmpeg
 
 from telethon.types import Message
 from telethon.errors.rpcerrorlist import DocumentInvalidError
